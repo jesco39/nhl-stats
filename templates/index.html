@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHL Stats</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>NHL Stats</h1>
+        <nav id="breadcrumb">
+            <a href="#" onclick="loadStandings(); return false;">Standings</a>
+        </nav>
+    </header>
+
+    <main id="app">
+        <div id="loading" class="loading" hidden>Loading...</div>
+
+        <section id="standings-view">
+            <div id="standings-content"></div>
+        </section>
+
+        <section id="team-view" hidden>
+            <div id="team-header"></div>
+            <div id="roster-content"></div>
+        </section>
+
+        <section id="player-view" hidden>
+            <div id="player-header"></div>
+            <div id="player-stats"></div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
