@@ -1,7 +1,19 @@
 // State
 let currentTeam = null;
 
-document.addEventListener('DOMContentLoaded', loadStandings);
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const carousel = await apiFetch('/api/playoff-carousel');
+        if (carousel.currentRound > 0) {
+            document.getElementById('bracket-nav-link').hidden = false;
+            loadBracket();
+        } else {
+            loadStandings();
+        }
+    } catch (e) {
+        loadStandings();
+    }
+});
 
 // --- Data Fetching ---
 
@@ -17,6 +29,8 @@ function showView(view) {
     document.getElementById('standings-view').hidden = view !== 'standings';
     document.getElementById('team-view').hidden = view !== 'team';
     document.getElementById('player-view').hidden = view !== 'player';
+    document.getElementById('bracket-view').hidden = view !== 'bracket';
+    document.getElementById('series-view').hidden = view !== 'series';
 }
 
 function showLoading(show) {
@@ -378,6 +392,52 @@ function renderPlayer(p) {
         }
     }
 
+    // Current playoff stats
+    if (p.featuredStats && p.featuredStats.playoffs) {
+        const ps = p.featuredStats.playoffs.subSeason;
+        if (ps) {
+            const isGoalie = p.position === 'G';
+            const cards = isGoalie
+                ? [
+                    { label: 'GP', value: ps.gamesPlayed },
+                    { label: 'W', value: ps.wins },
+                    { label: 'L', value: ps.losses },
+                    { label: 'GAA', value: ps.goalsAgainstAvg?.toFixed(2) },
+                    { label: 'SV%', value: ps.savePctg?.toFixed(3) },
+                    { label: 'SO', value: ps.shutouts }
+                ]
+                : [
+                    { label: 'GP', value: ps.gamesPlayed },
+                    { label: 'G', value: ps.goals },
+                    { label: 'A', value: ps.assists },
+                    { label: 'PTS', value: ps.points },
+                    { label: '+/-', value: ps.plusMinus },
+                    { label: 'PIM', value: ps.pim },
+                    { label: 'PPG', value: ps.powerPlayGoals },
+                    { label: 'S', value: ps.shots }
+                ];
+
+            const section = document.createElement('div');
+            section.className = 'stats-section';
+            section.innerHTML = '<h3>Current Playoffs</h3>';
+
+            const grid = document.createElement('div');
+            grid.className = 'featured-stats';
+            cards.forEach(c => {
+                if (c.value === undefined || c.value === null) return;
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="stat-value">${c.value}</div>
+                    <div class="stat-label">${c.label}</div>
+                `;
+                grid.appendChild(card);
+            });
+            section.appendChild(grid);
+            statsContainer.appendChild(section);
+        }
+    }
+
     // Last 5 games
     if (p.last5Games && p.last5Games.length > 0) {
         const isGoalie = p.position === 'G';
@@ -452,7 +512,7 @@ function renderPlayer(p) {
 
     // Season-by-season totals
     if (p.seasonTotals && p.seasonTotals.length > 0) {
-        const nhlSeasons = p.seasonTotals.filter(s => s.leagueAbbrev === 'NHL');
+        const nhlSeasons = p.seasonTotals.filter(s => s.leagueAbbrev === 'NHL' && s.gameTypeId !== 3);
         if (nhlSeasons.length > 0) {
             const isGoalie = p.position === 'G';
             const section = document.createElement('div');
@@ -534,6 +594,87 @@ function renderPlayer(p) {
             statsContainer.appendChild(section);
         }
     }
+
+    // Playoff history table
+    if (p.seasonTotals && p.seasonTotals.length > 0) {
+        const playoffSeasons = p.seasonTotals.filter(s => s.leagueAbbrev === 'NHL' && s.gameTypeId === 3);
+        if (playoffSeasons.length > 0) {
+            const isGoalie = p.position === 'G';
+            const section = document.createElement('div');
+            section.className = 'stats-section';
+            section.innerHTML = '<h3>NHL Playoff History</h3>';
+
+            const table = document.createElement('table');
+            if (isGoalie) {
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">Season</th>
+                            <th style="text-align:left">Team</th>
+                            <th>GP</th>
+                            <th>W</th>
+                            <th>L</th>
+                            <th>GAA</th>
+                            <th>SV%</th>
+                            <th>SO</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+                playoffSeasons.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="text-align:left">${formatSeason(s.season)}</td>
+                        <td style="text-align:left">${s.teamName?.default || '—'}</td>
+                        <td>${s.gamesPlayed}</td>
+                        <td>${s.wins}</td>
+                        <td>${s.losses}</td>
+                        <td>${s.goalsAgainstAvg?.toFixed(2) ?? '—'}</td>
+                        <td>${s.savePctg?.toFixed(3) ?? '—'}</td>
+                        <td>${s.shutouts ?? '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">Season</th>
+                            <th style="text-align:left">Team</th>
+                            <th>GP</th>
+                            <th>G</th>
+                            <th>A</th>
+                            <th>PTS</th>
+                            <th>+/-</th>
+                            <th>PIM</th>
+                            <th>PPG</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+                playoffSeasons.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="text-align:left">${formatSeason(s.season)}</td>
+                        <td style="text-align:left">${s.teamName?.default || '—'}</td>
+                        <td>${s.gamesPlayed}</td>
+                        <td>${s.goals}</td>
+                        <td>${s.assists}</td>
+                        <td>${s.points}</td>
+                        <td>${s.plusMinus ?? '—'}</td>
+                        <td>${s.pim ?? '—'}</td>
+                        <td>${s.powerPlayGoals ?? '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            section.appendChild(table);
+            statsContainer.appendChild(section);
+        }
+    }
 }
 
 function formatHeight(inches) {
@@ -547,4 +688,188 @@ function formatSeason(seasonId) {
     if (!seasonId) return '—';
     const s = String(seasonId);
     return `${s.substring(0, 4)}-${s.substring(6, 8)}`;
+}
+
+// --- Playoffs: Bracket ---
+
+async function loadBracket() {
+    setBreadcrumb([{ label: 'Bracket' }]);
+    showView('bracket');
+    showLoading(true);
+    try {
+        const data = await apiFetch('/api/playoff-bracket');
+        renderBracket(data);
+    } catch (e) {
+        document.getElementById('bracket-content').innerHTML =
+            `<p class="loading">Failed to load bracket: ${e.message}</p>`;
+    }
+    showLoading(false);
+}
+
+function renderBracket(data) {
+    const container = document.getElementById('bracket-content');
+    container.innerHTML = '';
+
+    const rounds = {};
+    (data.series || []).forEach(s => {
+        if (!rounds[s.playoffRound]) rounds[s.playoffRound] = [];
+        rounds[s.playoffRound].push(s);
+    });
+
+    const roundNames = { 1: '1st Round', 2: '2nd Round', 3: 'Conf Finals', 4: 'Stanley Cup Final' };
+
+    const grid = document.createElement('div');
+    grid.className = 'bracket-grid';
+
+    [1, 2, 3, 4].forEach(round => {
+        const seriesList = rounds[round];
+        if (!seriesList && !rounds[round - 1]) return;
+
+        const col = document.createElement('div');
+        col.className = 'bracket-col';
+
+        const header = document.createElement('div');
+        header.className = 'bracket-round-header';
+        header.textContent = roundNames[round] || `Round ${round}`;
+        col.appendChild(header);
+
+        if (seriesList) {
+            seriesList.forEach(s => col.appendChild(buildSeriesCard(s)));
+        } else {
+            const ph = document.createElement('div');
+            ph.className = 'bracket-series bracket-placeholder';
+            ph.textContent = 'TBD';
+            col.appendChild(ph);
+        }
+
+        grid.appendChild(col);
+    });
+
+    container.appendChild(grid);
+}
+
+function buildSeriesCard(s) {
+    const card = document.createElement('div');
+    card.className = 'bracket-series';
+    if (s.winningTeamId) card.classList.add('series-complete');
+
+    const top = s.topSeedTeam;
+    const bot = s.bottomSeedTeam;
+    const topWon = s.winningTeamId && s.winningTeamId === top.id;
+    const botWon = s.winningTeamId && s.winningTeamId === bot.id;
+
+    card.innerHTML = `
+        <div class="bracket-series-label">${s.seriesTitle} · ${s.seriesLetter}</div>
+        <div class="bracket-team ${topWon ? 'bracket-winner' : botWon ? 'bracket-loser' : ''}">
+            <img src="${top.darkLogo || top.logo}" alt="${top.abbrev}">
+            <span class="bracket-seed">${s.topSeedRankAbbrev}</span>
+            <span class="bracket-abbrev">${top.abbrev}</span>
+            <span class="bracket-wins">${s.topSeedWins}</span>
+        </div>
+        <div class="bracket-team ${botWon ? 'bracket-winner' : topWon ? 'bracket-loser' : ''}">
+            <img src="${bot.darkLogo || bot.logo}" alt="${bot.abbrev}">
+            <span class="bracket-seed">${s.bottomSeedRankAbbrev}</span>
+            <span class="bracket-abbrev">${bot.abbrev}</span>
+            <span class="bracket-wins">${s.bottomSeedWins}</span>
+        </div>
+    `;
+    card.onclick = () => loadSeries(s.seriesLetter, top, bot);
+    return card;
+}
+
+// --- Playoffs: Series Detail ---
+
+async function loadSeries(letter, topTeam, botTeam) {
+    const label = `${topTeam.abbrev} vs ${botTeam.abbrev}`;
+    setBreadcrumb([
+        { label: 'Bracket', onClick: loadBracket },
+        { label: label }
+    ]);
+    showView('series');
+    showLoading(true);
+    try {
+        const data = await apiFetch(`/api/playoff-series/${letter}`);
+        renderSeries(data);
+    } catch (e) {
+        document.getElementById('series-content').innerHTML =
+            `<p class="loading">Failed to load series: ${e.message}</p>`;
+    }
+    showLoading(false);
+}
+
+function renderSeries(data) {
+    const container = document.getElementById('series-content');
+    container.innerHTML = '';
+
+    const top = data.topSeedTeam;
+    const bot = data.bottomSeedTeam;
+    const bestOf = (data.neededToWin || 4) * 2 - 1;
+
+    const header = document.createElement('div');
+    header.className = 'series-header';
+    header.innerHTML = `
+        <div class="series-header-teams">
+            <div class="series-header-team">
+                <img src="${top.darkLogo || top.logo}" alt="${top.abbrev}">
+                <span>#${top.seed} ${top.abbrev}</span>
+            </div>
+            <div class="series-score-display">${top.seriesWins} &ndash; ${bot.seriesWins}</div>
+            <div class="series-header-team">
+                <img src="${bot.darkLogo || bot.logo}" alt="${bot.abbrev}">
+                <span>#${bot.seed} ${bot.abbrev}</span>
+            </div>
+        </div>
+        <div class="series-meta-label">Best of ${bestOf} &middot; ${data.roundLabel || ''}</div>
+    `;
+    container.appendChild(header);
+
+    const section = document.createElement('div');
+    section.className = 'stats-section';
+    section.innerHTML = '<h3>Games</h3>';
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th style="text-align:left">Game</th>
+                <th style="text-align:left">Date</th>
+                <th style="text-align:left">Matchup</th>
+                <th>Score</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
+
+    const tbody = table.querySelector('tbody');
+    (data.games || []).forEach(g => {
+        if (g.ifNecessary && g.gameState === 'FUT') return;
+        const date = g.startTimeUTC
+            ? new Date(g.startTimeUTC).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : '—';
+        const away = g.awayTeam.abbrev;
+        const home = g.homeTeam.abbrev;
+        let score = '—';
+        let status = 'Upcoming';
+        if (g.gameState === 'OFF' || g.gameState === 'FINAL') {
+            score = `${g.awayTeam.score} – ${g.homeTeam.score}`;
+            status = 'Final';
+        } else if (g.gameState === 'LIVE') {
+            score = `${g.awayTeam.score} – ${g.homeTeam.score}`;
+            status = 'Live';
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align:left">Game ${g.gameNumber}</td>
+            <td style="text-align:left">${date}</td>
+            <td style="text-align:left">${away} @ ${home}</td>
+            <td>${score}</td>
+            <td>${status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    section.appendChild(table);
+    container.appendChild(section);
 }

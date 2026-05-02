@@ -25,6 +25,9 @@ func main() {
 	mux.HandleFunc("GET /api/standings", handleStandings)
 	mux.HandleFunc("GET /api/roster/{team}", handleRoster)
 	mux.HandleFunc("GET /api/player/{id}", handlePlayer)
+	mux.HandleFunc("GET /api/playoff-bracket", handlePlayoffBracket)
+	mux.HandleFunc("GET /api/playoff-carousel", handlePlayoffCarousel)
+	mux.HandleFunc("GET /api/playoff-series/{letter}", handlePlayoffSeries)
 
 	// Static files (CSS, JS)
 	staticSub, _ := fs.Sub(staticFS, "static")

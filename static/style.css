@@ -339,3 +339,171 @@ td.left {
     text-transform: uppercase;
     margin-top: 4px;
 }
+
+/* --- Bracket Nav Link --- */
+
+#bracket-nav-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+#bracket-nav-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Bracket View --- */
+
+.bracket-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.bracket-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bracket-round-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.bracket-series {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.bracket-series:hover {
+    border-color: var(--accent);
+}
+
+.bracket-series.bracket-placeholder {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 13px;
+    padding: 24px;
+    cursor: default;
+}
+
+.bracket-series.bracket-placeholder:hover {
+    border-color: var(--border);
+}
+
+.bracket-series-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.bracket-team {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 14px;
+}
+
+.bracket-team img {
+    width: 24px;
+    height: 24px;
+}
+
+.bracket-team.bracket-winner .bracket-abbrev {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.bracket-team.bracket-loser {
+    opacity: 0.45;
+}
+
+.bracket-seed {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 28px;
+}
+
+.bracket-abbrev {
+    flex: 1;
+    font-weight: 500;
+}
+
+.bracket-wins {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent);
+    min-width: 16px;
+    text-align: right;
+}
+
+.bracket-team.bracket-winner .bracket-wins {
+    color: var(--green);
+}
+
+/* --- Series Detail View --- */
+
+.series-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.series-header-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 8px;
+}
+
+.series-header-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.series-header-team img {
+    width: 56px;
+    height: 56px;
+}
+
+.series-score-display {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 80px;
+    text-align: center;
+}
+
+.series-meta-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+@media (max-width: 900px) {
+    .bracket-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

@@ -12,6 +12,7 @@
         <nav id="breadcrumb">
             <a href="#" onclick="loadStandings(); return false;">Standings</a>
         </nav>
+        <a id="bracket-nav-link" href="#" hidden onclick="loadBracket(); return false;">Bracket</a>
     </header>
 
     <main id="app">
@@ -29,6 +30,14 @@
         <section id="player-view" hidden>
             <div id="player-header"></div>
             <div id="player-stats"></div>
+        </section>
+
+        <section id="bracket-view" hidden>
+            <div id="bracket-content"></div>
+        </section>
+
+        <section id="series-view" hidden>
+            <div id="series-content"></div>
         </section>
     </main>
 
