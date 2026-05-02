@@ -365,7 +365,42 @@ td.left {
 .bracket-col {
     display: flex;
     flex-direction: column;
+    gap: 24px;
+}
+
+.bracket-conference {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.bracket-conference-east {
+    border-left: 3px solid var(--accent);
+}
+
+.bracket-conference-west {
+    border-left: 3px solid var(--yellow);
+}
+
+.bracket-conference-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.bracket-conference-east .bracket-conference-header {
+    color: var(--accent);
+}
+
+.bracket-conference-west .bracket-conference-header {
+    color: var(--yellow);
 }
 
 .bracket-round-header {

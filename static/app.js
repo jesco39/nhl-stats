@@ -717,6 +717,11 @@ function renderBracket(data) {
     });
 
     const roundNames = { 1: '1st Round', 2: '2nd Round', 3: 'Conf Finals', 4: 'Stanley Cup Final' };
+    const easternLetters = { 1: ['A', 'B', 'C', 'D'], 2: ['I', 'J'], 3: ['M'] };
+    const conferenceFor = (letter, round) => {
+        if (round === 4) return null;
+        return easternLetters[round]?.includes(letter) ? 'Eastern' : 'Western';
+    };
 
     const grid = document.createElement('div');
     grid.className = 'bracket-grid';
@@ -733,19 +738,54 @@ function renderBracket(data) {
         header.textContent = roundNames[round] || `Round ${round}`;
         col.appendChild(header);
 
-        if (seriesList) {
-            seriesList.forEach(s => col.appendChild(buildSeriesCard(s)));
+        if (round === 4) {
+            if (seriesList) {
+                seriesList.forEach(s => col.appendChild(buildSeriesCard(s)));
+            } else {
+                col.appendChild(buildPlaceholder());
+            }
         } else {
-            const ph = document.createElement('div');
-            ph.className = 'bracket-series bracket-placeholder';
-            ph.textContent = 'TBD';
-            col.appendChild(ph);
+            const eastern = (seriesList || []).filter(s => conferenceFor(s.seriesLetter, round) === 'Eastern');
+            const western = (seriesList || []).filter(s => conferenceFor(s.seriesLetter, round) === 'Western');
+
+            const east = document.createElement('div');
+            east.className = 'bracket-conference bracket-conference-east';
+            const eastHeader = document.createElement('div');
+            eastHeader.className = 'bracket-conference-header';
+            eastHeader.textContent = 'Eastern';
+            east.appendChild(eastHeader);
+            if (eastern.length) {
+                eastern.forEach(s => east.appendChild(buildSeriesCard(s)));
+            } else {
+                east.appendChild(buildPlaceholder());
+            }
+            col.appendChild(east);
+
+            const west = document.createElement('div');
+            west.className = 'bracket-conference bracket-conference-west';
+            const westHeader = document.createElement('div');
+            westHeader.className = 'bracket-conference-header';
+            westHeader.textContent = 'Western';
+            west.appendChild(westHeader);
+            if (western.length) {
+                western.forEach(s => west.appendChild(buildSeriesCard(s)));
+            } else {
+                west.appendChild(buildPlaceholder());
+            }
+            col.appendChild(west);
         }
 
         grid.appendChild(col);
     });
 
     container.appendChild(grid);
+}
+
+function buildPlaceholder() {
+    const ph = document.createElement('div');
+    ph.className = 'bracket-series bracket-placeholder';
+    ph.textContent = 'TBD';
+    return ph;
 }
 
 function buildSeriesCard(s) {
