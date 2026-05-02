@@ -340,17 +340,35 @@ td.left {
     margin-top: 4px;
 }
 
-/* --- Bracket Nav Link --- */
+/* --- Site Nav (persistent) --- */
 
-#bracket-nav-link {
-    color: var(--accent);
-    text-decoration: none;
+#site-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     font-size: 14px;
-    margin-left: auto;
+    font-weight: 600;
 }
 
-#bracket-nav-link:hover {
-    text-decoration: underline;
+#site-nav a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+}
+
+#site-nav a:hover {
+    border-bottom-color: var(--accent);
+}
+
+#breadcrumb:empty {
+    display: none;
+}
+
+#breadcrumb {
+    margin-left: 8px;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
 }
 
 /* --- Bracket View --- */
@@ -475,6 +493,24 @@ td.left {
 
 .bracket-team.bracket-loser {
     opacity: 0.45;
+}
+
+.bracket-team.bracket-tbd {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.bracket-logo-empty {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    flex-shrink: 0;
+}
+
+.series-header-team:hover {
+    color: var(--accent);
 }
 
 .bracket-seed {

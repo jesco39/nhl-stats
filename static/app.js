@@ -65,7 +65,7 @@ function setBreadcrumb(parts) {
 // --- Standings ---
 
 async function loadStandings() {
-    setBreadcrumb([{ label: 'Standings' }]);
+    setBreadcrumb([]);
     showView('standings');
     showLoading(true);
     try {
@@ -181,10 +181,7 @@ function renderStandings(standings) {
 
 async function loadTeam(abbrev, teamName, teamLogo) {
     currentTeam = { abbrev, teamName, teamLogo };
-    setBreadcrumb([
-        { label: 'Standings', onClick: loadStandings },
-        { label: teamName }
-    ]);
+    setBreadcrumb([{ label: teamName }]);
     showView('team');
     showLoading(true);
 
@@ -257,7 +254,6 @@ function positionLabel(code) {
 
 async function loadPlayer(playerId, playerName) {
     setBreadcrumb([
-        { label: 'Standings', onClick: loadStandings },
         { label: currentTeam.teamName, onClick: () => loadTeam(currentTeam.abbrev, currentTeam.teamName, currentTeam.teamLogo) },
         { label: playerName }
     ]);
@@ -693,7 +689,7 @@ function formatSeason(seasonId) {
 // --- Playoffs: Bracket ---
 
 async function loadBracket() {
-    setBreadcrumb([{ label: 'Bracket' }]);
+    setBreadcrumb([]);
     showView('bracket');
     showLoading(true);
     try {
@@ -717,18 +713,21 @@ function renderBracket(data) {
     });
 
     const series = data.series || [];
-    const easternLetters = { 1: ['A', 'B', 'C', 'D'], 2: ['I', 'J'], 3: ['M'] };
-    const isEastern = (s) => easternLetters[s.playoffRound]?.includes(s.seriesLetter);
-
-    const groups = {
-        w1: series.filter(s => s.playoffRound === 1 && !isEastern(s)),
-        w2: series.filter(s => s.playoffRound === 2 && !isEastern(s)),
-        w3: series.filter(s => s.playoffRound === 3 && !isEastern(s)),
-        f:  series.filter(s => s.playoffRound === 4),
-        e3: series.filter(s => s.playoffRound === 3 && isEastern(s)),
-        e2: series.filter(s => s.playoffRound === 2 && isEastern(s)),
-        e1: series.filter(s => s.playoffRound === 1 && isEastern(s)),
+    const letterToGroup = {
+        A: 'e1', B: 'e1', C: 'e1', D: 'e1',
+        E: 'w1', F: 'w1', G: 'w1', H: 'w1',
+        I: 'e2', J: 'e2',
+        K: 'w2', L: 'w2',
+        M: 'e3',
+        N: 'w3',
+        O: 'f',
     };
+
+    const groups = { w1: [], w2: [], w3: [], f: [], e3: [], e2: [], e1: [] };
+    series.forEach(s => {
+        const g = letterToGroup[s.seriesLetter];
+        if (g) groups[g].push(s);
+    });
 
     const confRow = document.createElement('div');
     confRow.className = 'bracket-conf-row';
@@ -788,38 +787,48 @@ function buildSeriesCard(s) {
     card.className = 'bracket-series';
     if (s.winningTeamId) card.classList.add('series-complete');
 
-    const top = s.topSeedTeam;
-    const bot = s.bottomSeedTeam;
+    const top = s.topSeedTeam || {};
+    const bot = s.bottomSeedTeam || {};
+
+    if (!top.abbrev && !bot.abbrev) {
+        card.classList.add('bracket-placeholder');
+        card.textContent = 'TBD';
+        return card;
+    }
+
     const topWon = s.winningTeamId && s.winningTeamId === top.id;
     const botWon = s.winningTeamId && s.winningTeamId === bot.id;
 
     card.innerHTML = `
-        <div class="bracket-series-label">${s.seriesTitle} · ${s.seriesLetter}</div>
-        <div class="bracket-team ${topWon ? 'bracket-winner' : botWon ? 'bracket-loser' : ''}">
-            <img src="${top.darkLogo || top.logo}" alt="${top.abbrev}">
-            <span class="bracket-seed">${s.topSeedRankAbbrev}</span>
-            <span class="bracket-abbrev">${top.abbrev}</span>
-            <span class="bracket-wins">${s.topSeedWins}</span>
-        </div>
-        <div class="bracket-team ${botWon ? 'bracket-winner' : topWon ? 'bracket-loser' : ''}">
-            <img src="${bot.darkLogo || bot.logo}" alt="${bot.abbrev}">
-            <span class="bracket-seed">${s.bottomSeedRankAbbrev}</span>
-            <span class="bracket-abbrev">${bot.abbrev}</span>
-            <span class="bracket-wins">${s.bottomSeedWins}</span>
-        </div>
+        <div class="bracket-series-label">${s.seriesLetter}</div>
+        ${renderBracketTeam(top, s.topSeedRankAbbrev, s.topSeedWins, topWon, botWon)}
+        ${renderBracketTeam(bot, s.bottomSeedRankAbbrev, s.bottomSeedWins, botWon, topWon)}
     `;
     card.onclick = () => loadSeries(s.seriesLetter, top, bot);
     return card;
 }
 
+function renderBracketTeam(team, seedAbbrev, wins, won, otherWon) {
+    const isTBD = !team.abbrev || team.abbrev === 'TBD';
+    const logoHtml = (team.darkLogo || team.logo)
+        ? `<img src="${team.darkLogo || team.logo}" alt="${team.abbrev || ''}">`
+        : '<span class="bracket-logo-empty"></span>';
+    const cls = isTBD ? 'bracket-tbd' : (won ? 'bracket-winner' : (otherWon ? 'bracket-loser' : ''));
+    return `
+        <div class="bracket-team ${cls}">
+            ${logoHtml}
+            <span class="bracket-seed">${seedAbbrev || ''}</span>
+            <span class="bracket-abbrev">${team.abbrev || 'TBD'}</span>
+            <span class="bracket-wins">${(wins ?? '') === '' ? '' : wins}</span>
+        </div>
+    `;
+}
+
 // --- Playoffs: Series Detail ---
 
 async function loadSeries(letter, topTeam, botTeam) {
-    const label = `${topTeam.abbrev} vs ${botTeam.abbrev}`;
-    setBreadcrumb([
-        { label: 'Bracket', onClick: loadBracket },
-        { label: label }
-    ]);
+    const label = `${topTeam.abbrev || 'TBD'} vs ${botTeam.abbrev || 'TBD'}`;
+    setBreadcrumb([{ label: label }]);
     showView('series');
     showLoading(true);
     try {
@@ -844,18 +853,25 @@ function renderSeries(data) {
     header.className = 'series-header';
     header.innerHTML = `
         <div class="series-header-teams">
-            <div class="series-header-team">
+            <div class="series-header-team" data-abbrev="${top.abbrev}">
                 <img src="${top.darkLogo || top.logo}" alt="${top.abbrev}">
                 <span>#${top.seed} ${top.abbrev}</span>
             </div>
             <div class="series-score-display">${top.seriesWins} &ndash; ${bot.seriesWins}</div>
-            <div class="series-header-team">
+            <div class="series-header-team" data-abbrev="${bot.abbrev}">
                 <img src="${bot.darkLogo || bot.logo}" alt="${bot.abbrev}">
                 <span>#${bot.seed} ${bot.abbrev}</span>
             </div>
         </div>
         <div class="series-meta-label">Best of ${bestOf} &middot; ${data.roundLabel || ''}</div>
     `;
+    header.querySelectorAll('.series-header-team').forEach(el => {
+        const abbrev = el.dataset.abbrev;
+        const team = abbrev === top.abbrev ? top : bot;
+        const fullName = team.name?.default || abbrev;
+        el.style.cursor = 'pointer';
+        el.onclick = () => loadTeam(abbrev, fullName, team.darkLogo || team.logo);
+    });
     container.appendChild(header);
 
     const section = document.createElement('div');

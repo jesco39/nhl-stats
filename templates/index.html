@@ -9,10 +9,11 @@
 <body>
     <header>
         <h1>NHL Stats</h1>
-        <nav id="breadcrumb">
+        <nav id="site-nav">
             <a href="#" onclick="loadStandings(); return false;">Standings</a>
+            <a id="bracket-nav-link" href="#" hidden onclick="loadBracket(); return false;">Bracket</a>
         </nav>
-        <a id="bracket-nav-link" href="#" hidden onclick="loadBracket(); return false;">Bracket</a>
+        <nav id="breadcrumb"></nav>
     </header>
 
     <main id="app">
