@@ -716,65 +716,60 @@ function renderBracket(data) {
         rounds[s.playoffRound].push(s);
     });
 
-    const roundNames = { 1: '1st Round', 2: '2nd Round', 3: 'Conf Finals', 4: 'Stanley Cup Final' };
+    const series = data.series || [];
     const easternLetters = { 1: ['A', 'B', 'C', 'D'], 2: ['I', 'J'], 3: ['M'] };
-    const conferenceFor = (letter, round) => {
-        if (round === 4) return null;
-        return easternLetters[round]?.includes(letter) ? 'Eastern' : 'Western';
+    const isEastern = (s) => easternLetters[s.playoffRound]?.includes(s.seriesLetter);
+
+    const groups = {
+        w1: series.filter(s => s.playoffRound === 1 && !isEastern(s)),
+        w2: series.filter(s => s.playoffRound === 2 && !isEastern(s)),
+        w3: series.filter(s => s.playoffRound === 3 && !isEastern(s)),
+        f:  series.filter(s => s.playoffRound === 4),
+        e3: series.filter(s => s.playoffRound === 3 && isEastern(s)),
+        e2: series.filter(s => s.playoffRound === 2 && isEastern(s)),
+        e1: series.filter(s => s.playoffRound === 1 && isEastern(s)),
     };
+
+    const confRow = document.createElement('div');
+    confRow.className = 'bracket-conf-row';
+    confRow.innerHTML = `
+        <div class="bracket-conf-label bracket-conf-west">Western Conference</div>
+        <div class="bracket-conf-label bracket-conf-final">Stanley Cup</div>
+        <div class="bracket-conf-label bracket-conf-east">Eastern Conference</div>
+    `;
+    container.appendChild(confRow);
 
     const grid = document.createElement('div');
     grid.className = 'bracket-grid';
 
-    [1, 2, 3, 4].forEach(round => {
-        const seriesList = rounds[round];
-        if (!seriesList && !rounds[round - 1]) return;
+    const columns = [
+        { header: '1st Round',  side: 'west',  list: groups.w1, count: 4 },
+        { header: '2nd Round',  side: 'west',  list: groups.w2, count: 2 },
+        { header: 'Conf Final', side: 'west',  list: groups.w3, count: 1 },
+        { header: 'Final',      side: 'final', list: groups.f,  count: 1 },
+        { header: 'Conf Final', side: 'east',  list: groups.e3, count: 1 },
+        { header: '2nd Round',  side: 'east',  list: groups.e2, count: 2 },
+        { header: '1st Round',  side: 'east',  list: groups.e1, count: 4 },
+    ];
 
+    columns.forEach(c => {
         const col = document.createElement('div');
-        col.className = 'bracket-col';
+        col.className = `bracket-col bracket-col-${c.side}`;
 
         const header = document.createElement('div');
         header.className = 'bracket-round-header';
-        header.textContent = roundNames[round] || `Round ${round}`;
+        header.textContent = c.header;
         col.appendChild(header);
 
-        if (round === 4) {
-            if (seriesList) {
-                seriesList.forEach(s => col.appendChild(buildSeriesCard(s)));
-            } else {
-                col.appendChild(buildPlaceholder());
-            }
+        const wrap = document.createElement('div');
+        wrap.className = 'bracket-col-cards';
+
+        if (c.list.length > 0) {
+            c.list.forEach(s => wrap.appendChild(buildSeriesCard(s)));
         } else {
-            const eastern = (seriesList || []).filter(s => conferenceFor(s.seriesLetter, round) === 'Eastern');
-            const western = (seriesList || []).filter(s => conferenceFor(s.seriesLetter, round) === 'Western');
-
-            const east = document.createElement('div');
-            east.className = 'bracket-conference bracket-conference-east';
-            const eastHeader = document.createElement('div');
-            eastHeader.className = 'bracket-conference-header';
-            eastHeader.textContent = 'Eastern';
-            east.appendChild(eastHeader);
-            if (eastern.length) {
-                eastern.forEach(s => east.appendChild(buildSeriesCard(s)));
-            } else {
-                east.appendChild(buildPlaceholder());
-            }
-            col.appendChild(east);
-
-            const west = document.createElement('div');
-            west.className = 'bracket-conference bracket-conference-west';
-            const westHeader = document.createElement('div');
-            westHeader.className = 'bracket-conference-header';
-            westHeader.textContent = 'Western';
-            west.appendChild(westHeader);
-            if (western.length) {
-                western.forEach(s => west.appendChild(buildSeriesCard(s)));
-            } else {
-                west.appendChild(buildPlaceholder());
-            }
-            col.appendChild(west);
+            for (let i = 0; i < c.count; i++) wrap.appendChild(buildPlaceholder());
         }
-
+        col.appendChild(wrap);
         grid.appendChild(col);
     });
 

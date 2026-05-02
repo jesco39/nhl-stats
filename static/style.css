@@ -355,69 +355,78 @@ td.left {
 
 /* --- Bracket View --- */
 
+.bracket-conf-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr 3fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.bracket-conf-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-muted);
+}
+
+.bracket-conf-label.bracket-conf-west {
+    color: var(--yellow);
+    border-bottom-color: var(--yellow);
+}
+
+.bracket-conf-label.bracket-conf-east {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.bracket-conf-label.bracket-conf-final {
+    color: var(--green);
+    border-bottom-color: var(--green);
+}
+
 .bracket-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    align-items: start;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
+    min-height: 520px;
 }
 
 .bracket-col {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    min-width: 0;
 }
 
-.bracket-conference {
+.bracket-col-cards {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-
-.bracket-conference-east {
-    border-left: 3px solid var(--accent);
-}
-
-.bracket-conference-west {
-    border-left: 3px solid var(--yellow);
-}
-
-.bracket-conference-header {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--border);
-}
-
-.bracket-conference-east .bracket-conference-header {
-    color: var(--accent);
-}
-
-.bracket-conference-west .bracket-conference-header {
-    color: var(--yellow);
+    justify-content: space-around;
+    flex: 1;
+    gap: 8px;
 }
 
 .bracket-round-header {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
     border-bottom: 1px solid var(--border);
+    text-align: center;
 }
 
 .bracket-series {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 6px;
+    padding: 8px;
     cursor: pointer;
     transition: border-color 0.15s;
 }
@@ -439,22 +448,24 @@ td.left {
 }
 
 .bracket-series-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+    text-align: center;
 }
 
 .bracket-team {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    font-size: 14px;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 13px;
 }
 
 .bracket-team img {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
 }
 
 .bracket-team.bracket-winner .bracket-abbrev {
@@ -467,9 +478,10 @@ td.left {
 }
 
 .bracket-seed {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted);
-    min-width: 28px;
+    min-width: 22px;
+    flex-shrink: 0;
 }
 
 .bracket-abbrev {
@@ -537,8 +549,14 @@ td.left {
     text-transform: capitalize;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
+    main {
+        overflow-x: auto;
+    }
     .bracket-grid {
-        grid-template-columns: repeat(2, 1fr);
+        min-width: 980px;
+    }
+    .bracket-conf-row {
+        min-width: 980px;
     }
 }
