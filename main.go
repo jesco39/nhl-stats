@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 )
 
 //go:embed templates/*
@@ -29,7 +30,11 @@ func main() {
 	staticSub, _ := fs.Sub(staticFS, "static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(staticSub)))
 
-	addr := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8083"
+	}
+	addr := ":" + port
 	fmt.Printf("NHL Stats server running at http://localhost%s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
