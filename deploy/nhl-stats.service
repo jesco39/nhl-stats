@@ -1,0 +1,15 @@
+[Unit]
+Description=nhl-stats NHL standings and roster browser
+After=network.target
+
+[Service]
+Type=simple
+User=nhl-stats
+Group=nhl-stats
+WorkingDirectory=/opt/nhl-stats
+ExecStart=/opt/nhl-stats/nhl-stats
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+# Add this block to /etc/caddy/Caddyfile on the VM, then:
+#   sudo systemctl reload caddy
+#
+# Also ensure nhl-stats.jesco39.com has an A record pointing to the VM's IP.
+
+nhl-stats.jesco39.com {
+    reverse_proxy localhost:8083
+}
