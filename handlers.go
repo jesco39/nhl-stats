@@ -55,6 +55,38 @@ func handlePlayer(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, data)
 }
 
+func handlePlayoffBracket(w http.ResponseWriter, r *http.Request) {
+	data, err := fetchPlayoffBracket()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
+func handlePlayoffCarousel(w http.ResponseWriter, r *http.Request) {
+	data, err := fetchPlayoffCarousel()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
+func handlePlayoffSeries(w http.ResponseWriter, r *http.Request) {
+	letter := r.PathValue("letter")
+	if letter == "" {
+		http.Error(w, "series letter required", http.StatusBadRequest)
+		return
+	}
+	data, err := fetchPlayoffSeries(letter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
 func writeJSON(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -138,6 +139,105 @@ type PlayerLanding struct {
 func fetchPlayer(playerID string) (*PlayerLanding, error) {
 	var data PlayerLanding
 	if err := nhlGet(fmt.Sprintf("/player/%s/landing", playerID), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// --- Playoffs ---
+
+func currentPlayoffYear() int {
+	now := time.Now()
+	if now.Month() < time.September {
+		return now.Year()
+	}
+	return now.Year() + 1
+}
+
+type BracketTeam struct {
+	ID       int           `json:"id"`
+	Abbrev   string        `json:"abbrev"`
+	Name     LocalizedName `json:"name"`
+	Logo     string        `json:"logo"`
+	DarkLogo string        `json:"darkLogo"`
+}
+
+type BracketSeries struct {
+	SeriesLetter         string      `json:"seriesLetter"`
+	PlayoffRound         int         `json:"playoffRound"`
+	SeriesTitle          string      `json:"seriesTitle"`
+	SeriesAbbrev         string      `json:"seriesAbbrev"`
+	TopSeedWins          int         `json:"topSeedWins"`
+	BottomSeedWins       int         `json:"bottomSeedWins"`
+	TopSeedRankAbbrev    string      `json:"topSeedRankAbbrev"`
+	BottomSeedRankAbbrev string      `json:"bottomSeedRankAbbrev"`
+	WinningTeamID        int         `json:"winningTeamId"`
+	TopSeedTeam          BracketTeam `json:"topSeedTeam"`
+	BottomSeedTeam       BracketTeam `json:"bottomSeedTeam"`
+}
+
+type BracketResponse struct {
+	Series []BracketSeries `json:"series"`
+}
+
+type CarouselResponse struct {
+	SeasonID     int `json:"seasonId"`
+	CurrentRound int `json:"currentRound"`
+}
+
+type SeriesSeedTeam struct {
+	ID         int           `json:"id"`
+	Abbrev     string        `json:"abbrev"`
+	Name       LocalizedName `json:"name"`
+	Seed       int           `json:"seed"`
+	SeriesWins int           `json:"seriesWins"`
+	Logo       string        `json:"logo"`
+	DarkLogo   string        `json:"darkLogo"`
+}
+
+type GameTeam struct {
+	Abbrev string `json:"abbrev"`
+	Score  int    `json:"score"`
+}
+
+type SeriesGame struct {
+	GameNumber   int      `json:"gameNumber"`
+	StartTimeUTC string   `json:"startTimeUTC"`
+	HomeTeam     GameTeam `json:"homeTeam"`
+	AwayTeam     GameTeam `json:"awayTeam"`
+	GameState    string   `json:"gameState"`
+	IfNecessary  bool     `json:"ifNecessary"`
+}
+
+type SeriesScheduleResponse struct {
+	Round          int             `json:"round"`
+	RoundLabel     string          `json:"roundLabel"`
+	SeriesLetter   string          `json:"seriesLetter"`
+	TopSeedTeam    SeriesSeedTeam  `json:"topSeedTeam"`
+	BottomSeedTeam SeriesSeedTeam  `json:"bottomSeedTeam"`
+	NeededToWin    int             `json:"neededToWin"`
+	Games          []SeriesGame    `json:"games"`
+}
+
+func fetchPlayoffBracket() (*BracketResponse, error) {
+	var data BracketResponse
+	if err := nhlGet(fmt.Sprintf("/playoff-bracket/%d", currentPlayoffYear()), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func fetchPlayoffCarousel() (*CarouselResponse, error) {
+	var data CarouselResponse
+	if err := nhlGet(fmt.Sprintf("/playoff-series/carousel/%s", currentSeasonID()), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func fetchPlayoffSeries(letter string) (*SeriesScheduleResponse, error) {
+	var data SeriesScheduleResponse
+	if err := nhlGet(fmt.Sprintf("/schedule/playoff-series/%s/%s", currentSeasonID(), strings.ToLower(letter)), &data); err != nil {
 		return nil, err
 	}
 	return &data, nil

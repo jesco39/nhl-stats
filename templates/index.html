@@ -9,9 +9,11 @@
 <body>
     <header>
         <h1>NHL Stats</h1>
-        <nav id="breadcrumb">
+        <nav id="site-nav">
             <a href="#" onclick="loadStandings(); return false;">Standings</a>
+            <a id="bracket-nav-link" href="#" hidden onclick="loadBracket(); return false;">Bracket</a>
         </nav>
+        <nav id="breadcrumb"></nav>
     </header>
 
     <main id="app">
@@ -29,6 +31,14 @@
         <section id="player-view" hidden>
             <div id="player-header"></div>
             <div id="player-stats"></div>
+        </section>
+
+        <section id="bracket-view" hidden>
+            <div id="bracket-content"></div>
+        </section>
+
+        <section id="series-view" hidden>
+            <div id="series-content"></div>
         </section>
     </main>
 
