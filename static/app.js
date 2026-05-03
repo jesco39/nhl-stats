@@ -1,5 +1,7 @@
 // State
 let currentTeam = null;
+let currentSeries = null; // {letter, topTeam, botTeam}
+let currentGame = null;   // {id, gameNumber, away, home}
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -31,6 +33,7 @@ function showView(view) {
     document.getElementById('player-view').hidden = view !== 'player';
     document.getElementById('bracket-view').hidden = view !== 'bracket';
     document.getElementById('series-view').hidden = view !== 'series';
+    document.getElementById('game-view').hidden = view !== 'game';
 }
 
 function showLoading(show) {
@@ -252,11 +255,11 @@ function positionLabel(code) {
 
 // --- Player Detail ---
 
-async function loadPlayer(playerId, playerName) {
-    setBreadcrumb([
-        { label: currentTeam.teamName, onClick: () => loadTeam(currentTeam.abbrev, currentTeam.teamName, currentTeam.teamLogo) },
-        { label: playerName }
-    ]);
+async function loadPlayer(playerId, playerName, backCrumbs) {
+    const crumbs = backCrumbs || (currentTeam
+        ? [{ label: currentTeam.teamName, onClick: () => loadTeam(currentTeam.abbrev, currentTeam.teamName, currentTeam.teamLogo) }]
+        : []);
+    setBreadcrumb([...crumbs, { label: playerName }]);
     showView('player');
     showLoading(true);
 
@@ -773,6 +776,7 @@ function renderBracket(data) {
     });
 
     container.appendChild(grid);
+    renderLeaderboards(container, { limit: 10, topN: 10, title: 'Playoff Leaders' });
 }
 
 function buildPlaceholder() {
@@ -827,8 +831,13 @@ function renderBracketTeam(team, seedAbbrev, wins, won, otherWon) {
 // --- Playoffs: Series Detail ---
 
 async function loadSeries(letter, topTeam, botTeam) {
+    currentSeries = { letter, topTeam, botTeam };
+    currentGame = null;
     const label = `${topTeam.abbrev || 'TBD'} vs ${botTeam.abbrev || 'TBD'}`;
-    setBreadcrumb([{ label: label }]);
+    setBreadcrumb([
+        { label: 'Bracket', onClick: loadBracket },
+        { label: label },
+    ]);
     showView('series');
     showLoading(true);
     try {
@@ -911,6 +920,11 @@ function renderSeries(data) {
         }
 
         const tr = document.createElement('tr');
+        const clickable = g.gameState === 'OFF' || g.gameState === 'FINAL' || g.gameState === 'LIVE';
+        if (clickable && g.id) {
+            tr.classList.add('game-row-clickable');
+            tr.onclick = () => loadGame(g.id, g.gameNumber, away, home);
+        }
         tr.innerHTML = `
             <td style="text-align:left">Game ${g.gameNumber}</td>
             <td style="text-align:left">${date}</td>
@@ -923,4 +937,249 @@ function renderSeries(data) {
 
     section.appendChild(table);
     container.appendChild(section);
+
+    const seriesTeams = [top.abbrev, bot.abbrev].filter(Boolean);
+    renderLeaderboards(container, { teamAbbrevs: seriesTeams, limit: 50, topN: 5, title: 'Playoff Leaders — This Series' });
+}
+
+// --- Game Summary ---
+
+async function loadGame(gameId, gameNumber, away, home) {
+    currentGame = { gameId, gameNumber, away, home };
+    const gameLabel = `Game ${gameNumber}`;
+    const crumbs = [{ label: 'Bracket', onClick: loadBracket }];
+    if (currentSeries) {
+        const seriesLabel = `${currentSeries.topTeam.abbrev || 'TBD'} vs ${currentSeries.botTeam.abbrev || 'TBD'}`;
+        const { letter, topTeam, botTeam } = currentSeries;
+        crumbs.push({ label: seriesLabel, onClick: () => loadSeries(letter, topTeam, botTeam) });
+    }
+    setBreadcrumb([...crumbs, { label: gameLabel }]);
+    showView('game');
+    showLoading(true);
+    try {
+        const data = await apiFetch(`/api/game/${gameId}`);
+        renderGame(data, gameNumber);
+    } catch (e) {
+        document.getElementById('game-content').innerHTML =
+            `<p class="loading">Failed to load game: ${e.message}</p>`;
+    }
+    showLoading(false);
+}
+
+function renderGame(data, gameNumber) {
+    const container = document.getElementById('game-content');
+    container.innerHTML = '';
+
+    const away = data.awayTeam || {};
+    const home = data.homeTeam || {};
+
+    const stateLabel = (() => {
+        if (data.gameState === 'OFF' || data.gameState === 'FINAL') return 'Final';
+        if (data.gameState === 'LIVE') return 'Live';
+        return data.gameState || '';
+    })();
+    const dateStr = data.gameDate
+        ? new Date(data.gameDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+
+    const header = document.createElement('div');
+    header.className = 'game-summary-header';
+    header.innerHTML = `
+        <div class="game-summary-team">
+            <img src="${away.darkLogo || away.logo || ''}" alt="${away.abbrev || ''}">
+            <span class="game-summary-team-abbrev">${away.abbrev || ''}</span>
+        </div>
+        <div class="game-summary-score">
+            <div class="game-summary-scoreline">${away.score ?? '—'} – ${home.score ?? '—'}</div>
+            <div class="game-summary-status">${stateLabel}</div>
+            <div class="game-summary-date">${dateStr}</div>
+        </div>
+        <div class="game-summary-team">
+            <img src="${home.darkLogo || home.logo || ''}" alt="${home.abbrev || ''}">
+            <span class="game-summary-team-abbrev">${home.abbrev || ''}</span>
+        </div>
+    `;
+    container.appendChild(header);
+
+    const summary = data.summary || {};
+
+    // Three stars
+    const stars = summary.threeStars || [];
+    if (stars.length) {
+        const starsSection = document.createElement('div');
+        starsSection.className = 'stats-section';
+        starsSection.innerHTML = '<h3>Three Stars</h3>';
+        const row = document.createElement('div');
+        row.className = 'three-stars-row';
+        stars.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'three-star-card';
+            const statLine = `${s.goals}G ${s.assists}A ${s.points}P`;
+            const starLabels = ['1st Star', '2nd Star', '3rd Star'];
+            card.innerHTML = `
+                <img src="${s.headshot || ''}" alt="${s.name?.default || ''}">
+                <div class="three-star-info">
+                    <div class="three-star-rank">${starLabels[s.star - 1] || ''}</div>
+                    <div class="three-star-name">${s.name?.default || ''}</div>
+                    <div class="three-star-stat">${s.teamAbbrev} · ${statLine}</div>
+                </div>
+            `;
+            if (s.playerId) {
+                const backCrumbs = buildGameBackCrumbs();
+                card.onclick = () => loadPlayer(s.playerId, s.name?.default || '', backCrumbs);
+            }
+            row.appendChild(card);
+        });
+        starsSection.appendChild(row);
+        container.appendChild(starsSection);
+    }
+
+    // Period scoring
+    const scoring = summary.scoring || [];
+    if (scoring.length) {
+        const scoringSection = document.createElement('div');
+        scoringSection.className = 'stats-section';
+        scoringSection.innerHTML = '<h3>Scoring Summary</h3>';
+
+        scoring.forEach(period => {
+            const goals = period.goals || [];
+            if (!goals.length) return;
+
+            const pd = period.periodDescriptor || {};
+            const periodLabel = pd.periodType === 'OT' ? 'OT'
+                : pd.periodType === 'SO' ? 'SO'
+                : `${pd.number}${pd.number === 1 ? 'st' : pd.number === 2 ? 'nd' : 'rd'} Period`;
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th colspan="2" style="text-align:left;color:var(--text-muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;padding-bottom:4px">${periodLabel}</th>
+                        <th style="text-align:left">Goal</th>
+                        <th style="text-align:left">Assists</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            goals.forEach(g => {
+                const tr = document.createElement('tr');
+                const scorerName = `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim();
+                const teamAbbrev = g.teamAbbrev?.default || '';
+                const assists = (g.assists || []).map(a =>
+                    `${a.firstName?.default || ''} ${a.lastName?.default || ''}`.trim()
+                );
+                const backCrumbs = buildGameBackCrumbs();
+
+                tr.innerHTML = `
+                    <td style="color:var(--text-muted);font-size:0.8rem;min-width:42px">${g.timeInPeriod || ''}</td>
+                    <td style="font-size:0.8rem;color:var(--text-muted)">${teamAbbrev}</td>
+                    <td><span class="player-link" data-id="${g.playerId || ''}">${scorerName}</span></td>
+                    <td style="color:var(--text-muted);font-size:0.85rem">${assists.map((a, i) => `<span class="player-link" data-id="${(g.assists[i] || {}).playerId || ''}">${a}</span>`).join(', ')}</td>
+                    <td style="font-size:0.8rem;text-transform:uppercase;color:var(--text-muted)">${g.strength || 'ev'}</td>
+                `;
+
+                // Wire up player links
+                tr.querySelectorAll('.player-link').forEach((el, idx) => {
+                    const pid = parseInt(el.dataset.id, 10);
+                    if (!pid) return;
+                    el.style.cssText = 'cursor:pointer;color:var(--accent);';
+                    el.onclick = (e) => {
+                        e.stopPropagation();
+                        loadPlayer(pid, el.textContent.trim(), backCrumbs);
+                    };
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            scoringSection.appendChild(table);
+        });
+
+        container.appendChild(scoringSection);
+    }
+}
+
+function buildGameBackCrumbs() {
+    const crumbs = [{ label: 'Bracket', onClick: loadBracket }];
+    if (currentSeries) {
+        const seriesLabel = `${currentSeries.topTeam.abbrev || 'TBD'} vs ${currentSeries.botTeam.abbrev || 'TBD'}`;
+        const { letter, topTeam, botTeam } = currentSeries;
+        crumbs.push({ label: seriesLabel, onClick: () => loadSeries(letter, topTeam, botTeam) });
+    }
+    if (currentGame) {
+        const { gameId, gameNumber, away, home } = currentGame;
+        crumbs.push({ label: `Game ${gameNumber}`, onClick: () => loadGame(gameId, gameNumber, away, home) });
+    }
+    return crumbs;
+}
+
+// --- Playoff Leaderboards ---
+
+function renderLeaderboards(container, opts = {}) {
+    const { teamAbbrevs, limit = 10, topN = 10, title = 'Playoff Leaders' } = opts;
+
+    const section = document.createElement('div');
+    section.className = 'leaderboards-section';
+    section.innerHTML = `<h3>${title}</h3>`;
+
+    const grid = document.createElement('div');
+    grid.className = 'leaderboards-grid';
+    section.appendChild(grid);
+    container.appendChild(section);
+
+    const categories = [
+        { url: `/api/playoff-leaders/skaters?category=goals&limit=${limit}`, label: 'Goals', fmt: v => v },
+        { url: `/api/playoff-leaders/skaters?category=assists&limit=${limit}`, label: 'Assists', fmt: v => v },
+        { url: `/api/playoff-leaders/skaters?category=points&limit=${limit}`, label: 'Points', fmt: v => v },
+        { url: `/api/playoff-leaders/goalies?category=savePctg&limit=${limit}`, label: 'Save %', fmt: v => (v * 100).toFixed(1) + '%' },
+    ];
+
+    categories.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'leaderboard-card';
+        card.innerHTML = `<div class="leaderboard-card-title">${cat.label}</div><div class="leaderboard-entries"></div>`;
+        grid.appendChild(card);
+        const entriesEl = card.querySelector('.leaderboard-entries');
+
+        apiFetch(cat.url).then(data => {
+            let players = data.players || [];
+            if (teamAbbrevs && teamAbbrevs.length) {
+                players = players.filter(p => teamAbbrevs.includes(p.teamAbbrev));
+            }
+            players = players.slice(0, topN);
+
+            if (!players.length) {
+                entriesEl.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);padding:4px 0">No data</p>';
+                return;
+            }
+
+            players.forEach(p => {
+                const name = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim();
+                const entry = document.createElement('div');
+                entry.className = 'leaderboard-entry';
+                entry.innerHTML = `
+                    <img src="${p.headshot || ''}" alt="${name}">
+                    <div class="leaderboard-entry-info">
+                        <div class="leaderboard-entry-name">${name}</div>
+                        <div class="leaderboard-entry-team">${p.teamAbbrev || ''}</div>
+                    </div>
+                    <div class="leaderboard-entry-value">${cat.fmt(p.value)}</div>
+                `;
+                if (p.id) {
+                    const backCrumbs = currentSeries
+                        ? [{ label: 'Bracket', onClick: loadBracket },
+                           { label: `${currentSeries.topTeam.abbrev} vs ${currentSeries.botTeam.abbrev}`,
+                             onClick: () => loadSeries(currentSeries.letter, currentSeries.topTeam, currentSeries.botTeam) }]
+                        : [{ label: 'Bracket', onClick: loadBracket }];
+                    entry.onclick = () => loadPlayer(p.id, name, backCrumbs);
+                }
+                entriesEl.appendChild(entry);
+            });
+        }).catch(() => {
+            entriesEl.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);padding:4px 0">Unavailable</p>';
+        });
+    });
 }

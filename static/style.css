@@ -596,3 +596,229 @@ td.left {
         min-width: 980px;
     }
 }
+
+/* --- Clickable game rows --- */
+
+tr.game-row-clickable {
+    cursor: pointer;
+    transition: background 0.12s;
+}
+tr.game-row-clickable:hover {
+    background: var(--surface-hover);
+}
+
+/* --- Game Summary View --- */
+
+.game-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px 0 20px;
+}
+
+.game-summary-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+}
+
+.game-summary-team img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+}
+
+.game-summary-team-abbrev {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.game-summary-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.game-summary-scoreline {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-summary-status {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.game-summary-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.three-stars-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 8px 0 16px;
+}
+
+.three-star-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+    min-width: 180px;
+}
+
+.three-star-card:hover {
+    border-color: var(--accent);
+}
+
+.three-star-card img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.three-star-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.three-star-rank {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--yellow);
+}
+
+.three-star-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.three-star-stat {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* --- Playoff Leaderboards --- */
+
+.leaderboards-section {
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+}
+
+.leaderboards-section h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.leaderboards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    .leaderboards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 420px) {
+    .leaderboards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.leaderboard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.leaderboard-card-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.leaderboard-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    border-radius: 4px;
+    padding: 5px 4px;
+}
+
+.leaderboard-entry:last-child {
+    border-bottom: none;
+}
+
+.leaderboard-entry:hover {
+    background: var(--surface-hover);
+}
+
+.leaderboard-entry img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.leaderboard-entry-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.leaderboard-entry-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.leaderboard-entry-team {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.leaderboard-entry-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+}

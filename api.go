@@ -201,6 +201,7 @@ type GameTeam struct {
 }
 
 type SeriesGame struct {
+	ID           int      `json:"id"`
 	GameNumber   int      `json:"gameNumber"`
 	StartTimeUTC string   `json:"startTimeUTC"`
 	HomeTeam     GameTeam `json:"homeTeam"`
@@ -241,4 +242,110 @@ func fetchPlayoffSeries(letter string) (*SeriesScheduleResponse, error) {
 		return nil, err
 	}
 	return &data, nil
+}
+
+// --- Game Summary ---
+
+type GameLandingTeam struct {
+	Abbrev   string `json:"abbrev"`
+	Score    int    `json:"score"`
+	Logo     string `json:"logo"`
+	DarkLogo string `json:"darkLogo"`
+}
+
+type GameAssist struct {
+	PlayerID  int           `json:"playerId"`
+	FirstName LocalizedName `json:"firstName"`
+	LastName  LocalizedName `json:"lastName"`
+}
+
+type GameGoal struct {
+	PlayerID     int           `json:"playerId"`
+	FirstName    LocalizedName `json:"firstName"`
+	LastName     LocalizedName `json:"lastName"`
+	TeamAbbrev   LocalizedName `json:"teamAbbrev"`
+	Headshot     string        `json:"headshot"`
+	TimeInPeriod string        `json:"timeInPeriod"`
+	Strength     string        `json:"strength"`
+	Assists      []GameAssist  `json:"assists"`
+}
+
+type PeriodDescriptor struct {
+	Number     int    `json:"number"`
+	PeriodType string `json:"periodType"`
+}
+
+type PeriodScoring struct {
+	PeriodDescriptor PeriodDescriptor `json:"periodDescriptor"`
+	Goals            []GameGoal       `json:"goals"`
+}
+
+type ThreeStar struct {
+	Star     int           `json:"star"`
+	PlayerID int           `json:"playerId"`
+	TeamAbbrev string      `json:"teamAbbrev"`
+	Headshot string        `json:"headshot"`
+	Name     LocalizedName `json:"name"`
+	Position string        `json:"position"`
+	Goals    int           `json:"goals"`
+	Assists  int           `json:"assists"`
+	Points   int           `json:"points"`
+}
+
+type GameSummary struct {
+	Scoring    []PeriodScoring `json:"scoring"`
+	ThreeStars []ThreeStar     `json:"threeStars"`
+}
+
+type GameLandingResponse struct {
+	ID        int             `json:"id"`
+	GameDate  string          `json:"gameDate"`
+	GameState string          `json:"gameState"`
+	AwayTeam  GameLandingTeam `json:"awayTeam"`
+	HomeTeam  GameLandingTeam `json:"homeTeam"`
+	Summary   GameSummary     `json:"summary"`
+}
+
+func fetchGameLanding(gameID string) (*GameLandingResponse, error) {
+	var data GameLandingResponse
+	if err := nhlGet(fmt.Sprintf("/gamecenter/%s/landing", gameID), &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// --- Playoff Leaders ---
+
+type LeaderEntry struct {
+	ID            int           `json:"id"`
+	FirstName     LocalizedName `json:"firstName"`
+	LastName      LocalizedName `json:"lastName"`
+	SweaterNumber int           `json:"sweaterNumber"`
+	Headshot      string        `json:"headshot"`
+	TeamAbbrev    string        `json:"teamAbbrev"`
+	TeamLogo      string        `json:"teamLogo"`
+	Position      string        `json:"position"`
+	Value         float64       `json:"value"`
+}
+
+type LeadersResult struct {
+	Category string        `json:"category"`
+	Players  []LeaderEntry `json:"players"`
+}
+
+func fetchPlayoffLeaders(endpoint, category string, limit int) (*LeadersResult, error) {
+	path := fmt.Sprintf("/%s/%s/3?categories=%s&limit=%d", endpoint, currentSeasonID(), category, limit)
+	var raw map[string][]LeaderEntry
+	if err := nhlGet(path, &raw); err != nil {
+		return nil, err
+	}
+	return &LeadersResult{Category: category, Players: raw[category]}, nil
+}
+
+func fetchPlayoffSkaterLeaders(category string, limit int) (*LeadersResult, error) {
+	return fetchPlayoffLeaders("skater-stats-leaders", category, limit)
+}
+
+func fetchPlayoffGoalieLeaders(category string, limit int) (*LeadersResult, error) {
+	return fetchPlayoffLeaders("goalie-stats-leaders", category, limit)
 }

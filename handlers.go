@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strconv"
 )
 
 func handleIndex(tmplFS fs.FS) http.HandlerFunc {
@@ -80,6 +81,56 @@ func handlePlayoffSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := fetchPlayoffSeries(letter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
+func handleGame(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "game ID required", http.StatusBadRequest)
+		return
+	}
+	data, err := fetchGameLanding(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
+func handlePlayoffSkaterLeaders(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	if category == "" {
+		http.Error(w, "category required", http.StatusBadRequest)
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 {
+		limit = 10
+	}
+	data, err := fetchPlayoffSkaterLeaders(category, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	writeJSON(w, data)
+}
+
+func handlePlayoffGoalieLeaders(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	if category == "" {
+		http.Error(w, "category required", http.StatusBadRequest)
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 {
+		limit = 10
+	}
+	data, err := fetchPlayoffGoalieLeaders(category, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
